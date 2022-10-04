@@ -13,7 +13,7 @@ gh repo clone Ph0enixGh0st/SJ_HH_SALARY_PARSER
 Or download and unpack ZIP file from GIT Hub repository: https://github.com/Ph0enixGh0st/SJ_HH_SALARY_PARSER.git
 
 
-# Prerequisites
+## Prerequisites
 
 Python3 should be already installed. 
 Then use `pip` (or `pip3`, if there is a conflict with Python2) to install dependencies:
@@ -29,7 +29,7 @@ Please write down the following lines in your .env file and save the file:
 ```
 CLIENT_ID={your SuperJob Client ID here (4 digits)}
 API_KEY={your SuperJob API Key here}
-
+```
 
 # hh_sj_salary_parse.py
 
