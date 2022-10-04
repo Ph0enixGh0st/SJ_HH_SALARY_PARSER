@@ -42,11 +42,7 @@ The script allows to compare IT vacancies salaries for Moscow downloaded from hh
 python hh_sj_salary_parse.py
 ```
 
-
-
-
-
-
+![image](https://user-images.githubusercontent.com/108229516/193806035-ac0230e3-8da3-4225-bf07-fee6554339dc.png)
 
 
 ### Project Goals
