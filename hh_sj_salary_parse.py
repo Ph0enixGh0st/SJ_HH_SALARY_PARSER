@@ -1,17 +1,15 @@
-
 import datetime
 import json
 import os
 import requests
 
-from dataclasses import dataclass
 from datetime import timedelta as tdelta
 from dotenv import load_dotenv
-from django.utils import timezone
 from terminaltables import AsciiTable
 
 
 def fetch_all_vacancies_hh():
+
     city_id = '1'
     specialization = '1'
     publish_date_from = datetime.datetime.now() - datetime.timedelta(90)
@@ -19,6 +17,7 @@ def fetch_all_vacancies_hh():
         'area': city_id,
         'page': 0,
         'per_page': 100,
+        'only_with_salary': 'true',
         'specialization': specialization,
         'date_from': publish_date_from.strftime('%Y-%m-%d')
     }
@@ -26,115 +25,95 @@ def fetch_all_vacancies_hh():
     response = requests.get(url, params=params)
     vacancies = response.json()
     pages_qty = int(vacancies.get('pages'))
-    all_vacancies = {}
+    hh_all_vacancies = {}
 
-    with open('hh_all_vacancies.json', 'w', encoding='utf-8') as file:
-        for page in range(0, pages_qty-1):
+    count = 0
+    count_processed = 0
+    salary_pool = 0
+
+    salary_breakdown = {
+        'Python': {
+            'count': count,
+            'count_processed': count_processed,
+            'salary_pool': salary_pool
+        },
+        'Java': {
+            'count': count,
+            'count_processed': count_processed,
+            'salary_pool': salary_pool
+        },
+        'JavaScript': {
+            'count': count,
+            'count_processed': count_processed,
+            'salary_pool': salary_pool
+        }
+    }
+
+    language_pool = ['Python', 'Java', 'JavaScript']
+    avg_salary_python = 0
+    avg_salary_java = 0
+    avg_salary_js = 0
+
+    for language in language_pool:
+
+        for page in range(0, pages_qty):
+
             params['page'] = page
             one_page_vacancies = requests.get(url, params=params)
-            all_vacancies.update(one_page_vacancies.json())
-            json.dump(all_vacancies, file, indent=4, ensure_ascii=False)
+            hh_all_vacancies.update(one_page_vacancies.json())
 
+            for item in range(0, hh_all_vacancies['per_page']):
 
-def read_json_file(file):
-    with open(file, 'r', encoding='utf-8') as json_fix:
-        response = json_fix.read()
-        response = response.replace('\n', '')
-        response = response.replace('}{', '},{')
-        response = '[' + response + ']'
-        return json.loads(response)
+                if str(language) in hh_all_vacancies['items'][item]["name"]:
 
+                    salary_breakdown[language]['count'] += 1
 
-def count_prog_langs_hh(pages_qty=20, file_name='hh_all_vacancies.json'):
-    hh_all_vacancies = read_json_file(file_name)
+                    if hh_all_vacancies['items'][item]['salary'] is not None and hh_all_vacancies['items'][item]['salary']['currency'] == 'RUR':
+                        currency = hh_all_vacancies['items'][item]['salary']['currency']
+                        salary_from = hh_all_vacancies['items'][item]['salary']['from']
+                        salary_to = hh_all_vacancies['items'][item]['salary']['to']
+                        salary_breakdown[language]['count_processed'] += 1
+                        salary_breakdown[language]['salary_pool'] += int(predict_rub_salary(currency, salary_from, salary_to))
 
-    python_count = 0
-    js_count = 0
-    java_count = 0
+        if salary_breakdown['Python']['count_processed'] != 0:
+            avg_salary_python = int((salary_breakdown['Python']['salary_pool'])/(salary_breakdown['Python']['count_processed']))
+        if salary_breakdown['Java']['count_processed'] != 0:
+            avg_salary_java = int((salary_breakdown['Java']['salary_pool'])/(salary_breakdown['Java']['count_processed']))
+        if salary_breakdown['JavaScript']['count_processed'] !=0:
+            avg_salary_js = int((salary_breakdown['JavaScript']['salary_pool'])/(salary_breakdown['JavaScript']['count_processed']))
 
-    python_count_processed = 0
-    python_salary_pool = 0
-    js_count_processed = 0
-
-    js_salary_pool = 0
-    java_count_processed = 0
-    java_salary_pool = 0
-
-    for page in range(0, pages_qty-1):
-        for vacancy_id in range(0, 99):
-            if 'Python' in hh_all_vacancies[page]['items'][vacancy_id]['name']:
-                python_count += 1
-                if predict_rub_salary_hh(hh_all_vacancies[page]['items'][vacancy_id]['id']):
-                    python_count_processed += 1
-                    python_salary_pool = python_salary_pool + int(predict_rub_salary_hh(hh_all_vacancies[page]['items'][vacancy_id]['id']))
-
-            if 'Java' in hh_all_vacancies[page]['items'][vacancy_id]['name']:
-                java_count += 1
-                if predict_rub_salary_hh(hh_all_vacancies[page]['items'][vacancy_id]['id']):
-                    java_count_processed += 1
-                    java_salary_pool = java_salary_pool + int(predict_rub_salary_hh(hh_all_vacancies[page]['items'][vacancy_id]['id']))
-
-            if 'JavaScript' in hh_all_vacancies[page]['items'][vacancy_id]['name']:
-                js_count += 1
-                if predict_rub_salary_hh(hh_all_vacancies[page]['items'][vacancy_id]['id']):
-                    js_count_processed += 1
-                    js_salary_pool = js_salary_pool + int(predict_rub_salary_hh(hh_all_vacancies[page]['items'][vacancy_id]['id']))
-
-    avg_salary_python = int(python_salary_pool/python_count_processed)
-    avg_salary_java = int(java_salary_pool/java_count_processed)
-    avg_salary_js = int(js_salary_pool/js_count_processed)
-
-    TABLE_DATA = (
-        ('Language', 'Vacancies_Found', 'Vacancies_Processed', 'Avg Salary'),
-        ('Python', python_count, python_count_processed, avg_salary_python),
-        ('Java', java_count, java_count_processed, avg_salary_java),
-        ('JavaScript', js_count, js_count_processed, avg_salary_js)
+        hh_vacancies_salary = (
+            ('Language', 'Vacancies_Found', 'Vacancies_Processed', 'Avg Salary'),
+            ('Python', salary_breakdown['Python']['count'], salary_breakdown['Python']['count_processed'], avg_salary_python),
+            ('Java', salary_breakdown['Java']['count'], salary_breakdown['Java']['count_processed'], avg_salary_java),
+            ('JavaScript', salary_breakdown['JavaScript']['count'], salary_breakdown['JavaScript']['count_processed'], avg_salary_js)
         )
 
-    return TABLE_DATA
+    return hh_vacancies_salary
 
 
-def predict_rub_salary_hh(id):
+def predict_rub_salary(currency=None, salary_from=None, salary_to=None):
 
-    url = f'https://api.hh.ru/vacancies/{id}'
-    hh_id_salary = requests.get(url)
-    vacancy_info = hh_id_salary.json()
-
-    if vacancy_info['salary']:
-        if vacancy_info['salary']['currency'] != 'RUR':
-            return None
-        elif vacancy_info['salary']['from'] and vacancy_info['salary']['to']:
-            return (vacancy_info['salary']['from'] + vacancy_info['salary']['to'])/2
-        elif vacancy_info['salary']['from'] and not vacancy_info['salary']['to']:
-            return (vacancy_info['salary']['from'])*1.2
-        elif not vacancy_info['salary']['from'] and vacancy_info['salary']['to']:
-            return (vacancy_info['salary']['to'])*0.8
-        else:
-            return None
-
-
-def predict_rub_salary_sj(currency=None, vacancy_from=None, vacancy_to=None):
-
-    if currency == 'rub':
-        if vacancy_from and vacancy_to:
-            return (vacancy_from+vacancy_to)/2
-        elif vacancy_from and not vacancy_to:
-            return vacancy_from*1.2
-        elif not vacancy_from and vacancy_to:
-            return vacancy_to*0.8
+    if currency == 'rub' or currency == 'RUR':
+        if salary_from and salary_to:
+            return (salary_from + salary_to)/2
+        elif salary_from and not salary_to:
+            return salary_from*1.2
+        elif not salary_from and salary_to:
+            return salary_to*0.8
         else:
             return None
     else:
         return None
 
 
-def fetch_all_vacancies_sj(client_id, api_key):
+def fetch_all_vacancies_sj(sj_client_id, sj_api_key):
 
     sj_page_counter = 0
     sj_all_vacancies = {}
     headers = {
-        'client_id': client_id,
-        'X-Api-App-Id': api_key,
+        'client_id': sj_client_id,
+        'X-Api-App-Id': sj_api_key,
     }
     params = {
         'town': '4',
@@ -144,72 +123,75 @@ def fetch_all_vacancies_sj(client_id, api_key):
     }
     url = 'https://api.superjob.ru/2.0/vacancies/'
 
-    with open('sj_all_vacancies.json', 'w', encoding='utf-8') as file:
-        for sj_page_counter in range(0, 4):
+    sj_one_page_vacancies = requests.get(url, headers=headers, params=params, timeout=30)
+    sj_all_vacancies.update(sj_one_page_vacancies.json())
+
+    pages_qty = int(sj_all_vacancies['total'])//int(params['count'])
+    
+    count = 0
+    count_processed = 0
+    salary_pool = 0
+
+    salary_breakdown = {
+        'Python': {
+            'count': count,
+            'count_processed': count_processed,
+            'salary_pool': salary_pool
+        },
+        'Java': {
+            'count': count,
+            'count_processed': count_processed,
+            'salary_pool': salary_pool
+        },
+        'JavaScript': {
+            'count': count,
+            'count_processed': count_processed,
+            'salary_pool': salary_pool
+        }
+    }
+
+    language_pool = ['Python', 'Java', 'JavaScript']
+    avg_salary_python = 0
+    avg_salary_java = 0
+    avg_salary_js = 0
+
+    for language in language_pool:
+        for sj_page_counter in range(0, pages_qty + 1):
             params['page'] = sj_page_counter
             sj_one_page_vacancies = requests.get(url, headers=headers, params=params, timeout=30)
             sj_all_vacancies.update(sj_one_page_vacancies.json())
-            json.dump(sj_all_vacancies, file, indent=4, ensure_ascii=False)
+            
+            for vacancy in range(0, len(sj_all_vacancies['objects'])):
 
+                if language in sj_all_vacancies['objects'][vacancy]["profession"]:
+                    
+                    salary_breakdown[language]['count'] += 1
 
-def count_prog_langs_sj(pages_qty=500, file_name='sj_all_vacancies.json'):
-        sj_all_vacancies = read_json_file(file_name)
+                    currency = sj_all_vacancies['objects'][vacancy]["currency"]
+                    salary_from = sj_all_vacancies['objects'][vacancy]["payment_from"]
+                    salary_to = sj_all_vacancies['objects'][vacancy]["payment_to"]
 
-        python_count = 0
-        js_count = 0
-        java_count = 0
+                    if currency == 'rub' and (salary_from or salary_to):
+                        salary_breakdown[language]['count_processed'] += 1
+                        salary_breakdown[language]['salary_pool'] += int(predict_rub_salary(currency, salary_from, salary_to))
 
-        python_count_processed = 0
-        python_salary_pool = 0
-        js_count_processed = 0
-        js_salary_pool = 0
-        java_count_processed = 0
-        java_salary_pool = 0
+               
+        if salary_breakdown['Python']['count_processed'] != 0:
+            avg_salary_python = int((salary_breakdown['Python']['salary_pool'])/(salary_breakdown['Python']['count_processed']))
+        if salary_breakdown['Java']['count_processed'] != 0:
+            avg_salary_java = int((salary_breakdown['Java']['salary_pool'])/(salary_breakdown['Java']['count_processed']))
+        if salary_breakdown['JavaScript']['count_processed'] !=0:
+            avg_salary_js = int((salary_breakdown['JavaScript']['salary_pool'])/(salary_breakdown['JavaScript']['count_processed']))
 
-        for page in range(0, int(sj_all_vacancies[0]['total'])//100):
-            for vacancy_id in range(0, 99):
-
-                if 'Python' in sj_all_vacancies[page]['objects'][vacancy_id]['profession']:
-                    python_count += 1
-                    if predict_rub_salary_sj(sj_all_vacancies[page]['objects'][vacancy_id]['currency'], sj_all_vacancies[page]['objects'][vacancy_id]['payment_from'], sj_all_vacancies[page]['objects'][vacancy_id]['payment_to']):
-                        python_count_processed += 1
-                        python_salary_pool = python_salary_pool + predict_rub_salary_sj(sj_all_vacancies[page]['objects'][vacancy_id]['currency'], sj_all_vacancies[page]['objects'][vacancy_id]['payment_from'], sj_all_vacancies[page]['objects'][vacancy_id]['payment_to'])
-
-                if 'Java' in sj_all_vacancies[page]['objects'][vacancy_id]['profession']:
-                    java_count += 1
-                    if predict_rub_salary_sj(sj_all_vacancies[page]['objects'][vacancy_id]['currency'], sj_all_vacancies[page]['objects'][vacancy_id]['payment_from'], sj_all_vacancies[page]['objects'][vacancy_id]['payment_to']):
-                        java_count_processed += 1
-                        java_salary_pool = java_salary_pool + predict_rub_salary_sj(sj_all_vacancies[page]['objects'][vacancy_id]['currency'], sj_all_vacancies[page]['objects'][vacancy_id]['payment_from'], sj_all_vacancies[page]['objects'][vacancy_id]['payment_to'])
-
-                if 'JavaScript' in sj_all_vacancies[page]['objects'][vacancy_id]['profession']:
-                    js_count += 1
-                    if predict_rub_salary_sj(sj_all_vacancies[page]['objects'][vacancy_id]['currency'], sj_all_vacancies[page]['objects'][vacancy_id]['payment_from'], sj_all_vacancies[page]['objects'][vacancy_id]['payment_to']):
-                        js_count_processed += 1
-                        js_salary_pool = js_salary_pool + predict_rub_salary_sj(sj_all_vacancies[page]['objects'][vacancy_id]['currency'], sj_all_vacancies[page]['objects'][vacancy_id]['payment_from'], sj_all_vacancies[page]['objects'][vacancy_id]['payment_to'])
-
-        if python_count_processed != 0:
-            avg_salary_python = int(python_salary_pool/python_count_processed)
-        else:
-            avg_salary_python = 'N/A'
-
-        if java_count_processed != 0:
-            avg_salary_java = int(java_salary_pool/java_count_processed)
-        else:
-            avg_salary_java = 'N/A'
-
-        if js_count_processed != 0:
-            avg_salary_js = int(js_salary_pool/js_count_processed)
-        else:
-            avg_salary_js = 'N/A'
-
-        TABLE_DATA = (
-        ('Language', 'Vacancies_Found', 'Vacancies_Processed', 'Avg Salary'),
-        ('Python', python_count, python_count_processed, avg_salary_python),
-        ('Java', java_count, java_count_processed, avg_salary_java),
-        ('JavaScript', js_count, js_count_processed, avg_salary_js)
+        sj_vacancies_salary = (
+            ('Language', 'Vacancies_Found', 'Vacancies_Processed', 'Avg Salary'),
+            ('Python', salary_breakdown['Python']['count'], salary_breakdown['Python']['count_processed'], avg_salary_python),
+            ('Java', salary_breakdown['Java']['count'], salary_breakdown['Java']['count_processed'], avg_salary_java),
+            ('JavaScript', salary_breakdown['JavaScript']['count'], salary_breakdown['JavaScript']['count_processed'], avg_salary_js)
         )
 
-        return TABLE_DATA
+    return sj_vacancies_salary
+
 
 def show_table(title, table_data):
     TABLE_DATA = table_data
@@ -220,17 +202,14 @@ def show_table(title, table_data):
 
 
 def main():
+
     load_dotenv()
 
-    client_id = os.environ['CLIENT_ID']
-    api_key = os.environ['API_KEY']
+    sj_client_id = os.environ['SJ_CLIENT_ID']
+    sj_api_key = os.environ['SJ_API_KEY']
 
-    fetch_all_vacancies_hh()
-    count_prog_langs_hh()
-    fetch_all_vacancies_sj(str(client_id), api_key)
-    count_prog_langs_sj()
-    show_table('HeadHunter for Moscow', count_prog_langs_hh())
-    show_table('SuperJob for Moscow', count_prog_langs_sj())
+    show_table('HeadHunter for Moscow', fetch_all_vacancies_hh())
+    show_table('SuperJob for Moscow', fetch_all_vacancies_sj(str(sj_client_id), sj_api_key))
 
 
 if __name__ == '__main__':
