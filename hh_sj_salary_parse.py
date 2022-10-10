@@ -119,7 +119,8 @@ def fetch_all_vacancies_sj(sj_client_id, sj_api_key):
         'town': '4',
         'catalogues': '48',
         'page': {sj_page_counter},
-        'count': '100'
+        'count': '100',
+        'no_agreement': '1',
     }
     url = 'https://api.superjob.ru/2.0/vacancies/'
 
@@ -194,8 +195,7 @@ def fetch_all_vacancies_sj(sj_client_id, sj_api_key):
 
 
 def show_table(title, table_data):
-    TABLE_DATA = table_data
-    table_instance = AsciiTable(TABLE_DATA, title)
+    table_instance = AsciiTable(table_data, title)
     table_instance.justify_columns[2] = 'right'
     print(table_instance.table)
     print()
