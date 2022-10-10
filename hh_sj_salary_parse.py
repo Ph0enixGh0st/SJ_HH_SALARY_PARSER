@@ -209,7 +209,7 @@ def main():
     sj_api_key = os.environ['SJ_API_KEY']
 
     show_table('HeadHunter for Moscow', fetch_all_vacancies_hh())
-    show_table('SuperJob for Moscow', fetch_all_vacancies_sj(str(sj_client_id), sj_api_key))
+    show_table('SuperJob for Moscow', fetch_all_vacancies_sj(sj_client_id, sj_api_key))
 
 
 if __name__ == '__main__':
