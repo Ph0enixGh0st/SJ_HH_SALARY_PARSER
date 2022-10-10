@@ -69,7 +69,7 @@ def fetch_all_vacancies_hh():
 
                     salary_breakdown[language]['count'] += 1
 
-                    if hh_all_vacancies['items'][item]['salary'] is not None and hh_all_vacancies['items'][item]['salary']['currency'] == 'RUR':
+                    if hh_all_vacancies['items'][item]['salary'] and hh_all_vacancies['items'][item]['salary']['currency'] == 'RUR':
                         currency = hh_all_vacancies['items'][item]['salary']['currency']
                         salary_from = hh_all_vacancies['items'][item]['salary']['from']
                         salary_to = hh_all_vacancies['items'][item]['salary']['to']
