@@ -30,29 +30,30 @@ def fetch_all_vacancies_hh():
     count = 0
     count_processed = 0
     salary_pool = 0
+    avg_salary = 0
 
     salary_breakdown = {
         'Python': {
             'count': count,
             'count_processed': count_processed,
-            'salary_pool': salary_pool
+            'salary_pool': salary_pool,
+            'avg_salary': avg_salary
         },
         'Java': {
             'count': count,
             'count_processed': count_processed,
-            'salary_pool': salary_pool
+            'salary_pool': salary_pool,
+            'avg_salary': avg_salary
         },
         'JavaScript': {
             'count': count,
             'count_processed': count_processed,
-            'salary_pool': salary_pool
+            'salary_pool': salary_pool,
+            'avg_salary': avg_salary
         }
     }
 
     language_pool = ['Python', 'Java', 'JavaScript']
-    avg_salary_python = 0
-    avg_salary_java = 0
-    avg_salary_js = 0
 
     for language in language_pool:
 
@@ -75,18 +76,16 @@ def fetch_all_vacancies_hh():
                         salary_breakdown[language]['count_processed'] += 1
                         salary_breakdown[language]['salary_pool'] += int(predict_rub_salary(currency, salary_from, salary_to))
 
-        if salary_breakdown['Python']['count_processed'] != 0:
-            avg_salary_python = int((salary_breakdown['Python']['salary_pool'])/(salary_breakdown['Python']['count_processed']))
-        if salary_breakdown['Java']['count_processed'] != 0:
-            avg_salary_java = int((salary_breakdown['Java']['salary_pool'])/(salary_breakdown['Java']['count_processed']))
-        if salary_breakdown['JavaScript']['count_processed'] !=0:
-            avg_salary_js = int((salary_breakdown['JavaScript']['salary_pool'])/(salary_breakdown['JavaScript']['count_processed']))
+        if salary_breakdown[language]['count_processed'] != 0:
+            salary_breakdown[language]['avg_salary'] = int((salary_breakdown[language]['salary_pool'])/(salary_breakdown[language]['count_processed']))
+        else:
+            salary_breakdown[language]['avg_salary'] = "N/A"
 
         hh_vacancies_salary = (
             ('Language', 'Vacancies_Found', 'Vacancies_Processed', 'Avg Salary'),
-            ('Python', salary_breakdown['Python']['count'], salary_breakdown['Python']['count_processed'], avg_salary_python),
-            ('Java', salary_breakdown['Java']['count'], salary_breakdown['Java']['count_processed'], avg_salary_java),
-            ('JavaScript', salary_breakdown['JavaScript']['count'], salary_breakdown['JavaScript']['count_processed'], avg_salary_js)
+            ('Python', salary_breakdown['Python']['count'], salary_breakdown['Python']['count_processed'], salary_breakdown['Python']['avg_salary']),
+            ('Java', salary_breakdown['Java']['count'], salary_breakdown['Java']['count_processed'], salary_breakdown['Java']['avg_salary']),
+            ('JavaScript', salary_breakdown['JavaScript']['count'], salary_breakdown['JavaScript']['count_processed'], salary_breakdown['JavaScript']['avg_salary'])
         )
 
     return hh_vacancies_salary
@@ -131,29 +130,30 @@ def fetch_all_vacancies_sj(sj_client_id, sj_api_key):
     count = 0
     count_processed = 0
     salary_pool = 0
+    avg_salary = 0
 
     salary_breakdown = {
         'Python': {
             'count': count,
             'count_processed': count_processed,
-            'salary_pool': salary_pool
+            'salary_pool': salary_pool,
+            'avg_salary': avg_salary
         },
         'Java': {
             'count': count,
             'count_processed': count_processed,
-            'salary_pool': salary_pool
+            'salary_pool': salary_pool,
+            'avg_salary': avg_salary
         },
         'JavaScript': {
             'count': count,
             'count_processed': count_processed,
-            'salary_pool': salary_pool
+            'salary_pool': salary_pool,
+            'avg_salary': avg_salary
         }
     }
 
     language_pool = ['Python', 'Java', 'JavaScript']
-    avg_salary_python = 0
-    avg_salary_java = 0
-    avg_salary_js = 0
 
     for language in language_pool:
         for sj_page_counter in range(0, pages_qty + 1):
@@ -176,18 +176,17 @@ def fetch_all_vacancies_sj(sj_client_id, sj_api_key):
                         salary_breakdown[language]['salary_pool'] += int(predict_rub_salary(currency, salary_from, salary_to))
 
                
-        if salary_breakdown['Python']['count_processed'] != 0:
-            avg_salary_python = int((salary_breakdown['Python']['salary_pool'])/(salary_breakdown['Python']['count_processed']))
-        if salary_breakdown['Java']['count_processed'] != 0:
-            avg_salary_java = int((salary_breakdown['Java']['salary_pool'])/(salary_breakdown['Java']['count_processed']))
-        if salary_breakdown['JavaScript']['count_processed'] !=0:
-            avg_salary_js = int((salary_breakdown['JavaScript']['salary_pool'])/(salary_breakdown['JavaScript']['count_processed']))
+        if salary_breakdown[language]['count_processed'] != 0:
+            salary_breakdown[language]['avg_salary'] = int((salary_breakdown[language]['salary_pool'])/(salary_breakdown[language]['count_processed']))
+        else:
+            salary_breakdown[language]['avg_salary'] = "N/A"
+
 
         sj_vacancies_salary = (
             ('Language', 'Vacancies_Found', 'Vacancies_Processed', 'Avg Salary'),
-            ('Python', salary_breakdown['Python']['count'], salary_breakdown['Python']['count_processed'], avg_salary_python),
-            ('Java', salary_breakdown['Java']['count'], salary_breakdown['Java']['count_processed'], avg_salary_java),
-            ('JavaScript', salary_breakdown['JavaScript']['count'], salary_breakdown['JavaScript']['count_processed'], avg_salary_js)
+            ('Python', salary_breakdown['Python']['count'], salary_breakdown['Python']['count_processed'], salary_breakdown['Python']['avg_salary']),
+            ('Java', salary_breakdown['Java']['count'], salary_breakdown['Java']['count_processed'], salary_breakdown['Java']['avg_salary']),
+            ('JavaScript', salary_breakdown['JavaScript']['count'], salary_breakdown['JavaScript']['count_processed'], salary_breakdown['JavaScript']['avg_salary'])
         )
 
     return sj_vacancies_salary
