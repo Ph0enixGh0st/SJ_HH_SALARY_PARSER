@@ -24,7 +24,7 @@ def fetch_all_vacancies_hh():
     url = 'https://api.hh.ru/vacancies'
     response = requests.get(url, params=params)
     vacancies = response.json()
-    pages_qty = int(vacancies.get('pages'))
+    pages_qty = vacancies['pages']
     hh_all_vacancies = {}
 
     count = 0
