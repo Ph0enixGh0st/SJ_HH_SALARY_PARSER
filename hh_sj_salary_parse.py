@@ -24,6 +24,7 @@ def fetch_all_vacancies_hh():
     url = 'https://api.hh.ru/vacancies'
     response = requests.get(url, params=params)
     vacancies = response.json()
+    response.raise_for_status()
     pages_qty = vacancies['pages']
     hh_all_vacancies = {}
 
@@ -62,6 +63,7 @@ def fetch_all_vacancies_hh():
             params['page'] = page
             one_page_vacancies = requests.get(url, params=params)
             hh_all_vacancies.update(one_page_vacancies.json())
+            one_page_vacancies.raise_for_status()
 
             for item in range(0, hh_all_vacancies['per_page']):
 
@@ -122,6 +124,7 @@ def fetch_all_vacancies_sj(sj_client_id, sj_api_key):
 
     sj_one_page_vacancies = requests.get(url, headers=headers, params=params, timeout=30)
     sj_all_vacancies.update(sj_one_page_vacancies.json())
+    sj_one_page_vacancies.raise_for_status()
 
     pages_qty = int(sj_all_vacancies['total'])//int(params['count'])
     
@@ -158,6 +161,7 @@ def fetch_all_vacancies_sj(sj_client_id, sj_api_key):
             params['page'] = sj_page_counter
             sj_one_page_vacancies = requests.get(url, headers=headers, params=params, timeout=30)
             sj_all_vacancies.update(sj_one_page_vacancies.json())
+            sj_one_page_vacancies.raise_for_status()
             
             for vacancy in range(0, len(sj_all_vacancies['objects'])):
 
