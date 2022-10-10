@@ -12,8 +12,10 @@ def fetch_all_vacancies_hh():
 
     city_id = '1'
     specialization = '1'
+    language = ''
     publish_date_from = datetime.datetime.now() - datetime.timedelta(90)
     params = {
+        'text': f'{language}',
         'area': city_id,
         'page': 0,
         'per_page': 100,
@@ -60,23 +62,22 @@ def fetch_all_vacancies_hh():
 
         for page in range(0, pages_qty):
 
+            params['text'] = language
             params['page'] = page
             one_page_vacancies = requests.get(url, params=params)
             hh_all_vacancies.update(one_page_vacancies.json())
             one_page_vacancies.raise_for_status()
 
-            for item in range(0, hh_all_vacancies['per_page']):
+            for vacancy_id, vacancy in enumerate(hh_all_vacancies['items']):
 
-                if str(language) in hh_all_vacancies['items'][item]["name"]:
+                salary_breakdown[language]['count'] += 1
 
-                    salary_breakdown[language]['count'] += 1
-
-                    if hh_all_vacancies['items'][item]['salary'] and hh_all_vacancies['items'][item]['salary']['currency'] == 'RUR':
-                        currency = hh_all_vacancies['items'][item]['salary']['currency']
-                        salary_from = hh_all_vacancies['items'][item]['salary']['from']
-                        salary_to = hh_all_vacancies['items'][item]['salary']['to']
-                        salary_breakdown[language]['count_processed'] += 1
-                        salary_breakdown[language]['salary_pool'] += int(predict_rub_salary(currency, salary_from, salary_to))
+                if hh_all_vacancies['items'][vacancy_id]['salary'] and hh_all_vacancies['items'][vacancy_id]['salary']['currency'] == 'RUR':
+                    currency = hh_all_vacancies['items'][vacancy_id]['salary']['currency']
+                    salary_from = hh_all_vacancies['items'][vacancy_id]['salary']['from']
+                    salary_to = hh_all_vacancies['items'][vacancy_id]['salary']['to']
+                    salary_breakdown[language]['count_processed'] += 1
+                    salary_breakdown[language]['salary_pool'] += int(predict_rub_salary(currency, salary_from, salary_to))
 
         if salary_breakdown[language]['count_processed'] != 0:
             salary_breakdown[language]['avg_salary'] = int((salary_breakdown[language]['salary_pool'])/(salary_breakdown[language]['count_processed']))
