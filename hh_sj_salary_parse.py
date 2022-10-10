@@ -127,7 +127,7 @@ def fetch_all_vacancies_sj(sj_client_id, sj_api_key):
     sj_one_page_vacancies.raise_for_status()
 
     pages_qty = int(sj_all_vacancies['total'])//int(params['count'])
-    
+
     count = 0
     count_processed = 0
     salary_pool = 0
@@ -162,27 +162,25 @@ def fetch_all_vacancies_sj(sj_client_id, sj_api_key):
             sj_one_page_vacancies = requests.get(url, headers=headers, params=params, timeout=30)
             sj_all_vacancies.update(sj_one_page_vacancies.json())
             sj_one_page_vacancies.raise_for_status()
-            
-            for vacancy in range(0, len(sj_all_vacancies['objects'])):
 
-                if language in sj_all_vacancies['objects'][vacancy]["profession"]:
-                    
+            for vacancy_id, vacancy in enumerate(sj_all_vacancies['objects']):
+
+                if language in sj_all_vacancies['objects'][vacancy_id]["profession"]:
+
                     salary_breakdown[language]['count'] += 1
 
-                    currency = sj_all_vacancies['objects'][vacancy]["currency"]
-                    salary_from = sj_all_vacancies['objects'][vacancy]["payment_from"]
-                    salary_to = sj_all_vacancies['objects'][vacancy]["payment_to"]
+                    currency = sj_all_vacancies['objects'][vacancy_id]["currency"]
+                    salary_from = sj_all_vacancies['objects'][vacancy_id]["payment_from"]
+                    salary_to = sj_all_vacancies['objects'][vacancy_id]["payment_to"]
 
                     if currency == 'rub' and (salary_from or salary_to):
                         salary_breakdown[language]['count_processed'] += 1
                         salary_breakdown[language]['salary_pool'] += int(predict_rub_salary(currency, salary_from, salary_to))
 
-               
         if salary_breakdown[language]['count_processed'] != 0:
             salary_breakdown[language]['avg_salary'] = int((salary_breakdown[language]['salary_pool'])/(salary_breakdown[language]['count_processed']))
         else:
             salary_breakdown[language]['avg_salary'] = "N/A"
-
 
         sj_vacancies_salary = (
             ('Language', 'Vacancies_Found', 'Vacancies_Processed', 'Avg Salary'),
