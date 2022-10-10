@@ -93,17 +93,15 @@ def fetch_all_vacancies_hh():
 
 def predict_rub_salary(currency=None, salary_from=None, salary_to=None):
 
-    if currency == 'rub' or currency == 'RUR':
+    if currency not in ['rub', 'RUR']:
+        return None
+    else:
         if salary_from and salary_to:
             return (salary_from + salary_to)/2
-        elif salary_from and not salary_to:
+        elif salary_from:
             return salary_from*1.2
-        elif not salary_from and salary_to:
-            return salary_to*0.8
         else:
-            return None
-    else:
-        return None
+            return salary_to*0.8
 
 
 def fetch_all_vacancies_sj(sj_client_id, sj_api_key):
