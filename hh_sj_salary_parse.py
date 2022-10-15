@@ -10,33 +10,17 @@ from terminaltables import AsciiTable
 
 def fetch_all_vacancies_hh():
 
-    count = 0
-    count_processed = 0
-    salary_pool = 0
-    avg_salary = 0
-
+    salary_breakdown = {}
     language_pool = ['Python', 'Java', 'JavaScript']
-
-    salary_breakdown = {
-        'Python': {
-            'count': count,
-            'count_processed': count_processed,
-            'salary_pool': salary_pool,
-            'avg_salary': avg_salary
-        },
-        'Java': {
-            'count': count,
-            'count_processed': count_processed,
-            'salary_pool': salary_pool,
-            'avg_salary': avg_salary
-        },
-        'JavaScript': {
-            'count': count,
-            'count_processed': count_processed,
-            'salary_pool': salary_pool,
-            'avg_salary': avg_salary
-        }
+    labels_pool = {
+        'count': 0,
+        'count_processed': 0,
+        'salary_pool': 0,
+        'avg_salary': 0
     }
+
+    for language in language_pool:
+        salary_breakdown[language] = dict(labels_pool)
 
     city_id = '1'
     specialization = '1'
@@ -52,31 +36,33 @@ def fetch_all_vacancies_hh():
         'date_from': publish_date_from.strftime('%Y-%m-%d')
     }
     url = 'https://api.hh.ru/vacancies'
-    response = requests.get(url, params=params)
-    vacancies = response.json()
-    response.raise_for_status()
     hh_all_vacancies = {}
-    
-    for language in language_pool:
 
-        for page in range(0, vacancies['pages']):
+    for language in salary_breakdown:
+
+        page = 0
+        pages = 1
+
+        while page <= pages:
 
             params['text'] = language
             params['page'] = page
             one_page_vacancies = requests.get(url, params=params)
             one_page_vacancies.raise_for_status()
             hh_all_vacancies.update(one_page_vacancies.json())
+            pages = hh_all_vacancies['pages']
 
-            for vacancy_id, vacancy in enumerate(hh_all_vacancies['items']):
+            for vacancy in hh_all_vacancies['items']:
 
                 salary_breakdown[language]['count'] += 1
 
-                if hh_all_vacancies['items'][vacancy_id]['salary'] and hh_all_vacancies['items'][vacancy_id]['salary']['currency'] == 'RUR':
-                    currency = hh_all_vacancies['items'][vacancy_id]['salary']['currency']
-                    salary_from = hh_all_vacancies['items'][vacancy_id]['salary']['from']
-                    salary_to = hh_all_vacancies['items'][vacancy_id]['salary']['to']
+                if vacancy['salary'] and vacancy['salary']['currency'] == 'RUR':
+                    currency = vacancy['salary']['currency']
+                    salary_from = vacancy['salary']['from']
+                    salary_to = vacancy['salary']['to']
                     salary_breakdown[language]['count_processed'] += 1
                     salary_breakdown[language]['salary_pool'] += int(predict_rub_salary(currency, salary_from, salary_to))
+            page += 1
 
         if salary_breakdown[language]['count_processed']:
             salary_breakdown[language]['avg_salary'] = int((salary_breakdown[language]['salary_pool'])/(salary_breakdown[language]['count_processed']))
@@ -94,14 +80,14 @@ def fetch_all_vacancies_hh():
 
 def predict_rub_salary(currency=None, salary_from=None, salary_to=None):
 
-    if currency not in ['rub', 'RUR']:
-        return None
-    else:
+    if currency in ['rub', 'RUR']:
         if salary_from and salary_to:
             return (salary_from + salary_to)/2
         elif salary_from:
             return salary_from*1.2
         return salary_to*0.8
+    else:
+        return None
 
 
 def fetch_all_vacancies_sj(sj_client_id, sj_api_key):
@@ -123,64 +109,49 @@ def fetch_all_vacancies_sj(sj_client_id, sj_api_key):
     }
     url = 'https://api.superjob.ru/2.0/vacancies/'
 
-    sj_one_page_vacancies = requests.get(url, headers=headers, params=params, timeout=30)
-    sj_all_vacancies.update(sj_one_page_vacancies.json())
-    sj_one_page_vacancies.raise_for_status()
-
-    pages_qty = int(sj_all_vacancies['total'])//int(params['count'])
-
-    count = 0
-    count_processed = 0
-    salary_pool = 0
-    avg_salary = 0
-
-    salary_breakdown = {
-        'Python': {
-            'count': count,
-            'count_processed': count_processed,
-            'salary_pool': salary_pool,
-            'avg_salary': avg_salary
-        },
-        'Java': {
-            'count': count,
-            'count_processed': count_processed,
-            'salary_pool': salary_pool,
-            'avg_salary': avg_salary
-        },
-        'JavaScript': {
-            'count': count,
-            'count_processed': count_processed,
-            'salary_pool': salary_pool,
-            'avg_salary': avg_salary
-        }
+    salary_breakdown = {}
+    language_pool = ['Python', 'Java', 'JavaScript']
+    labels_pool = {
+        'count': 0,
+        'count_processed': 0,
+        'salary_pool': 0,
+        'avg_salary': 0
     }
 
-    language_pool = ['Python', 'Java', 'JavaScript']
-
     for language in language_pool:
-        for sj_page_counter in range(0, pages_qty + 1):
+        salary_breakdown[language] = dict(labels_pool)
+
+    for language in salary_breakdown:
+
+        sj_page_counter = 0
+        pages = 1
+
+        while sj_page_counter <= pages + 1:
+
             params['page'] = sj_page_counter
             params['keyword'] = language
             sj_one_page_vacancies = requests.get(url, headers=headers, params=params, timeout=30)
             sj_one_page_vacancies.raise_for_status()
             sj_all_vacancies.update(sj_one_page_vacancies.json())
+            pages = int(sj_all_vacancies['total'])//int(params['count'])
 
-            for vacancy_id, vacancy in enumerate(sj_all_vacancies['objects']):
+            for vacancy in sj_all_vacancies['objects']:
 
-                    salary_breakdown[language]['count'] += 1
+                salary_breakdown[language]['count'] += 1
 
-                    currency = sj_all_vacancies['objects'][vacancy_id]["currency"]
-                    salary_from = sj_all_vacancies['objects'][vacancy_id]["payment_from"]
-                    salary_to = sj_all_vacancies['objects'][vacancy_id]["payment_to"]
+                currency = vacancy['currency']
+                salary_from = vacancy['payment_from']
+                salary_to = vacancy['payment_to']
 
-                    if currency == 'rub' and (salary_from or salary_to):
-                        salary_breakdown[language]['count_processed'] += 1
-                        salary_breakdown[language]['salary_pool'] += int(predict_rub_salary(currency, salary_from, salary_to))
+                if currency == 'rub' and (salary_from or salary_to):
+                    salary_breakdown[language]['count_processed'] += 1
+                    salary_breakdown[language]['salary_pool'] += int(predict_rub_salary(currency, salary_from, salary_to))
+            sj_page_counter += 1
 
         if salary_breakdown[language]['count_processed']:
             salary_breakdown[language]['avg_salary'] = int((salary_breakdown[language]['salary_pool'])/(salary_breakdown[language]['count_processed']))
         else:
-            salary_breakdown[language]['avg_salary'] = "N/A"
+            salary_breakdown[language]['avg_salary'] = 'N/A'
 
         sj_vacancies_salary = (('Language', 'Vacancies_Found', 'Vacancies_Processed', 'Avg Salary'),)
 
