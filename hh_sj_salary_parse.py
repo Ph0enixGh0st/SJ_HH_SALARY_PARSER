@@ -80,14 +80,14 @@ def fetch_all_vacancies_hh():
 
 def predict_rub_salary(currency=None, salary_from=None, salary_to=None):
 
-    if currency in ['rub', 'RUR']:
-        if salary_from and salary_to:
-            return (salary_from + salary_to)/2
-        elif salary_from:
-            return salary_from*1.2
-        return salary_to*0.8
-    else:
+    if currency not in ['rub', 'RUR']:
         return None
+    if salary_from and salary_to:
+        return (salary_from + salary_to)/2
+    if salary_from:
+        return salary_from*1.2
+    if salary_to:
+        return salary_to*0.8
 
 
 def fetch_all_vacancies_sj(sj_client_id, sj_api_key):
@@ -100,11 +100,11 @@ def fetch_all_vacancies_sj(sj_client_id, sj_api_key):
         'X-Api-App-Id': sj_api_key,
     }
     params = {
-        'town': '4',
-        'catalogues': '48',
+        'town': '4', ## by default 'town': '4' refers to Moscow
+        'catalogues': '48', ## by default 'catalogues': '48' refers to IT specialization
         'page': {sj_page_counter},
-        'count': '100',
-        'no_agreement': '1',
+        'count': '100', ## by default 'count': '100' refers to 100 vacancies will be displayed on one page
+        'no_agreement': '1', ## by default 'no_agreement': '1' turns off vacancies with no salary specified
         'keyword': f'{language}'
     }
     url = 'https://api.superjob.ru/2.0/vacancies/'
